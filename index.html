@@ -688,7 +688,7 @@
                     document.getElementById('qrcode-gen').innerHTML = "";
                     new QRCode(document.getElementById("qrcode-gen"), { text: currentUserData.zuuId, width: 200, height: 200, colorDark: "#000000", colorLight: "#ffffff" });
                     
-                    if(currentUserData.email === "Star@gmail.com") {
+                                        if(currentUserData.email === "Star@gmail.com") {
                         document.getElementById('admin-panel-btn').style.display = 'block';
                         loadAdminData();
                     }
@@ -697,9 +697,13 @@
                         document.getElementById('pin-setup-modal').style.display = 'flex';
                         window['clear_setup-pin-container']();
                     }
+                    
+                    // এই লাইনটি নতুন যোগ করা হলো কন্টাক্ট লিস্ট দেখানোর জন্য
+                    loadContacts(); 
                 });
                 
                 loadRecentActivity(user.uid);
+
                 setTimeout(() => { document.getElementById('splash-screen').style.display = 'none'; navTo('main-app'); }, 1000);
             } else {
                 document.getElementById('splash-screen').style.display = 'none'; navTo('auth-screen');
@@ -911,9 +915,16 @@
                     }
                     hideLoader(); 
                     
-                    const successAudio = new Audio('https://nice-blue-x6fyb1sn.edgeone.dev/');
-                    successAudio.play().catch(e => console.log("Audio play blocked"));
+                                        const successAudio = new Audio('https://nice-blue-x6fyb1sn.edgeone.dev/');
                     
+                    // সাউন্ড লোড হওয়া মাত্রই প্লে হওয়ার জন্য
+                    successAudio.preload = 'auto';
+                    
+                    // শুরুর ১ সেকেন্ডের ফাঁকা অংশটুকু বাদ দেওয়ার জন্য (skip)
+                    successAudio.currentTime = 1.0; 
+                    
+                    successAudio.play().catch(e => console.log("Audio play blocked"));
+
                     document.getElementById('success-amount').innerText = '₹' + amt;
                     document.getElementById('success-name').innerText = 'To: ' + paymentReceiverData.name;
                     document.getElementById('payment-success-modal').style.display = 'flex';
@@ -1052,30 +1063,89 @@
                     setTimeout(() => { transition.classList.remove('active'); }, 400);
                 }, 300);
             };
-
-            window.addEventListener('popstate', (e) => {
-                const modals = document.querySelectorAll('.pin-modal');
-                let isModalOpen = false;
-                
-                modals.forEach(m => {
-                    if(m.style.display === 'flex') {
-                        m.style.display = 'none';
-                        isModalOpen = true;
-                    }
-                });
-
-                if(isModalOpen) {
-                    history.pushState({ screen: currentScreenState }, '', '#' + currentScreenState);
-                    return; 
-                }
-
-                if (e.state && e.state.screen) {
-                    window.navTo(e.state.screen, false);
-                } else if(currentScreenState !== 'main-app' && currentScreenState !== 'auth-screen') {
-                    window.navTo('main-app', false);
-                }
-            });
+          
         });
     </script>
+      <!-- Exit Warning Modal -->
+    <div id="exit-warning-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; flex-direction:column; backdrop-filter: blur(5px);">
+        <div style="background: var(--card-bg); padding: 30px; border-radius: 20px; text-align: center; border: 1px solid var(--danger); box-shadow: 0 10px 30px rgba(255, 71, 87, 0.3); width: 85%; max-width: 350px;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: var(--danger); margin-bottom: 15px;"></i>
+            <h3 style="color: white; margin-bottom: 10px; font-weight: 600;">সতর্কতা</h3>
+            <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.95rem;">আপনি কি অ্যাপ থেকে বেরোতে চাইছেন?</p>
+            <div style="display: flex; gap: 15px;">
+                <button class="btn-primary" onclick="closeExitWarning()" style="flex:1; background: var(--primary-light); color: white; border: none;">না</button>
+                <button class="btn-danger" onclick="exitApp()" style="flex:1; border: none;">ওকে</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let lastBackPressTime = 0;
+        let isExitWarningOpen = false;
+
+        // হার্ডওয়্যার ব্যাক বাটন ট্র্যাক করার জন্য History State পুশ করা হচ্ছে
+        function trapHardwareBackButton() {
+            history.pushState({ popupOpen: true }, '', location.href);
+        }
+
+        // শুরুতে একবার স্টেট পুশ করে রাখা হলো
+        trapHardwareBackButton();
+
+        window.addEventListener('popstate', function(event) {
+            // ব্রাউজার যেন নিজে থেকে ব্যাক না করে, তাই আবার ট্র্যাপ করা হলো
+            trapHardwareBackButton();
+
+            if (isExitWarningOpen) {
+                // ওয়ার্নিং খোলা অবস্থায় আবার ব্যাক ক্লিক করলে অ্যাপ এক্সিট হবে
+                exitApp();
+                return;
+            }
+
+            // currentScreenState ভেরিয়েবলটি আপনার বর্তমান ফাইলের স্ক্রিপ্ট থেকে নেওয়া হয়েছে
+            if (typeof currentScreenState !== 'undefined' && currentScreenState !== 'main-app') {
+                // ১. অ্যাপের অন্য কোনো স্ক্রিনে থাকলে সাথে সাথে হোমস্ক্রিনে নিয়ে আসবে
+                navTo('main-app', false);
+            } else {
+                // ২. ইউজার হোমস্ক্রিনেই (main-app) আছেন
+                const currentTime = new Date().getTime();
+                
+                if (currentTime - lastBackPressTime <= 1000) {
+                    // ১ সেকেন্ডের মধ্যে দুবার ক্লিক করলে ওয়ার্নিং দেখাবে
+                    showExitWarning();
+                } else {
+                    lastBackPressTime = currentTime;
+                    // প্রথম ব্যাক ক্লিকে ইউজারকে সতর্ক করার জন্য কাস্টম অ্যালার্ট
+                    if(typeof alert === 'function') {
+                        alert("অ্যাপ থেকে বেরোতে দ্রুত ২ বার ব্যাক ক্লিক করুন");
+                    }
+                }
+            }
+        });
+
+        function showExitWarning() {
+            isExitWarningOpen = true;
+            document.getElementById('exit-warning-modal').style.display = 'flex';
+        }
+
+        function closeExitWarning() {
+            isExitWarningOpen = false;
+            document.getElementById('exit-warning-modal').style.display = 'none';
+        }
+
+        function exitApp() {
+            // Android বা Sketchware Webview-এর জন্য অ্যাপ এক্সিট করার সাধারণ লজিক
+            if (typeof Android !== "undefined" && Android.finish) {
+                Android.finish(); // Sketchware-এ সাধারণত Android.finish() ব্যবহৃত হয়
+            } else if (typeof Android !== "undefined" && Android.exitApp) {
+                Android.exitApp();
+            } else if (navigator.app && navigator.app.exitApp) {
+                navigator.app.exitApp(); 
+            } else {
+                // ব্রাউজার ফলব্যাক
+                window.close(); 
+            }
+        }
+    </script>
+
 </body>
 </html>
