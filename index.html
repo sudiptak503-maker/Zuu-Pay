@@ -1146,10 +1146,10 @@
             }
         }
 </script>
-  <!-- ================= [ ZUU PAY - PAYMENT HANDLER OVERRIDE ] ================= -->
+  <!-- ================= [ ZUU PAY - PAYMENT HANDLER OVERRIDE (UPDATED) ] ================= -->
 <script type="module">
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
 
 const auth = getAuth();
 const db = getFirestore();
@@ -1166,7 +1166,7 @@ if (urlParams.get('action') === 'payment' && urlParams.get('data')) {
 
     const renderUI = (userDoc) => {
         if (!userDoc) {
-            // ইউজার লগইন না থাকলে (সাময়িক লিঙ্কিং)
+            // ইউজার লগইন না থাকলে
             overlay.innerHTML = `
                 <h2 style="color:var(--accent-color); margin-bottom:20px; font-size:35px;"><i class="fas fa-bolt"></i> Zuu Pay</h2>
                 <p style="color:var(--text-muted); font-size:14px; margin-bottom:30px;">Star Finance-এর পেমেন্ট সম্পন্ন করতে আপনার Zuu Pay আইডিতে একবার লগইন করুন।</p>
@@ -1191,24 +1191,32 @@ if (urlParams.get('action') === 'payment' && urlParams.get('data')) {
                 }
             };
         } else {
-            // ইউজার লগইন থাকলে (পেমেন্ট পেজ)
+            // ইউজার লগইন থাকলে (পেমেন্ট পেজ + Security PIN)
             const bal = userDoc.balance || 0;
+            const userPin = userDoc.pin; // ইউজারের সেট করা আসল পিন
+            
             overlay.innerHTML = `
                 <div style="background:var(--primary-dark); padding:35px 25px; border-radius:25px; border:2px solid #FFD700; width:100%; max-width:380px; box-shadow:0 15px 35px rgba(255,215,0,0.2);">
                     <div style="width: 70px; height: 70px; background: rgba(255,215,0,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 15px; color:#FFD700; font-size:30px;">
                         <i class="fas fa-crown"></i>
                     </div>
                     <h2 style="color:#FFD700; margin-bottom:5px;">Premium Payment</h2>
-                    <p style="color:var(--text-muted); font-size:13px; margin-bottom:25px;">To: ${paymentData.starFullname} (Star Finance)</p>
+                    <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">To: ${paymentData.starFullname} (Star Finance)</p>
                     
-                    <div style="background:#000; padding:20px; border-radius:15px; margin-bottom:25px; border:1px solid #333; text-align:left;">
+                    <div style="background:#000; padding:20px; border-radius:15px; margin-bottom:20px; border:1px solid #333; text-align:left;">
                         <div style="display:flex; justify-content:space-between; color:#aaa; margin-bottom:10px; font-size:14px;"><span>অরিজিনাল অ্যামাউন্ট:</span> <span>₹${paymentData.originalAmount}</span></div>
                         <div style="display:flex; justify-content:space-between; color:var(--success); margin-bottom:10px; font-size:14px;"><span>ইনস্ট্যান্ট ছাড় (2%):</span> <span>- ₹${paymentData.discount}</span></div>
                         <hr style="border:0; border-top:1px dashed #444; margin:12px 0;">
                         <div style="display:flex; justify-content:space-between; font-size:22px; font-weight:900; color:#fff;"><span>মোট পে করবেন:</span> <span style="color:#FFD700;">₹${paymentData.amount}</span></div>
                     </div>
                     
-                    <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">আপনার বর্তমান Zuu ব্যালেন্স: <strong>₹${bal.toFixed(2)}</strong></p>
+                    <p style="color:var(--text-muted); font-size:13px; margin-bottom:15px;">বর্তমান Zuu ব্যালেন্স: <strong>₹${bal.toFixed(2)}</strong></p>
+                    
+                    <!-- PIN Input Field -->
+                    <div style="margin-bottom:20px;">
+                        <label style="color:#FFD700; font-size:13px; display:block; margin-bottom:8px;">Enter 6-Digit Security PIN</label>
+                        <input type="password" id="zpPinInput" maxlength="6" inputmode="numeric" placeholder="******" style="width:180px; padding:12px; text-align:center; font-size:24px; letter-spacing:10px; border-radius:12px; background:#000; color:#fff; border:1px solid #FFD700; outline:none; transition:0.3s;">
+                    </div>
                     
                     <button id="zpPayBtn" style="background:linear-gradient(135deg, #FFD700, #FFA500); color:#000; padding:18px; border-radius:15px; width:100%; font-weight:900; font-size:16px; border:none; cursor:pointer; margin-bottom:15px; box-shadow: 0 8px 20px rgba(255,215,0,0.3);">
                         Pay ₹${paymentData.amount} Instantly
@@ -1217,13 +1225,46 @@ if (urlParams.get('action') === 'payment' && urlParams.get('data')) {
                 </div>
             `;
 
+            // পিন ইনপুট এ ফোকাস করলে বর্ডার হাইলাইট হবে
+            document.getElementById('zpPinInput').addEventListener('focus', function() { this.style.borderColor = '#00e676'; });
+            document.getElementById('zpPinInput').addEventListener('blur', function() { this.style.borderColor = '#FFD700'; });
+
             document.getElementById('zpPayBtn').onclick = async () => {
                 if(bal < paymentData.amount) return alert('Insufficient Zuu Pay Balance! দয়া করে আগে ব্যালেন্স যুক্ত করুন।');
+                
+                // ১. Security PIN Check
+                const enteredPin = document.getElementById('zpPinInput').value;
+                if(!userPin) return alert('আপনার প্রোফাইলে কোনো পিন সেট করা নেই। দয়া করে আগে পিন সেট করুন।');
+                if(enteredPin !== userPin) {
+                    document.getElementById('zpPinInput').value = '';
+                    document.getElementById('zpPinInput').style.borderColor = 'red';
+                    return alert('ভুল পিন! দয়া করে সঠিক ৬ ডিজিটের পিন দিন।');
+                }
+
                 document.getElementById('zpPayBtn').innerText = 'Processing Payment...';
                 try {
+                    // ২. ব্যালেন্স কাটা
                     const newBal = bal - paymentData.amount;
                     await updateDoc(doc(db, "users", auth.currentUser.uid), { balance: newBal });
                     
+                    // ৩. ট্রানজাকশন হিস্ট্রি সেভ করা (যাতে অ্যাপে রেকর্ড থাকে)
+                    await addDoc(collection(db, "transactions"), {
+                        senderUid: auth.currentUser.uid,
+                        senderName: userDoc.name || 'User',
+                        receiverUid: paymentData.starUid || 'star_finance',
+                        receiverName: paymentData.starFullname || 'Star Finance',
+                        amount: paymentData.amount,
+                        timestamp: serverTimestamp(),
+                        type: 'transfer'
+                    });
+
+                    // ৪. পেমেন্ট সাকসেস সাউন্ড প্লে করা
+                    const successAudio = new Audio('https://nice-blue-x6fyb1sn.edgeone.dev/');
+                    successAudio.preload = 'auto';
+                    successAudio.currentTime = 1.0; 
+                    successAudio.play().catch(e => console.log("Audio play blocked"));
+                    
+                    // ৫. সাকসেস UI দেখানো
                     overlay.innerHTML = `
                         <div style="background:var(--primary-dark); padding:40px; border-radius:25px; text-align:center; border:2px solid var(--success);">
                             <i class="fas fa-check-circle" style="color:var(--success); font-size:60px; margin-bottom:20px;"></i>
@@ -1232,10 +1273,11 @@ if (urlParams.get('action') === 'payment' && urlParams.get('data')) {
                         </div>
                     `;
                     
+                    // ৬. Star Finance-এ ফেরত পাঠানো (২.৫ সেকেন্ড পর যাতে সাউন্ড পুরোটা বাজতে পারে)
                     setTimeout(() => {
                         const separator = returnUrl.includes('?') ? '&' : '?';
                         window.location.href = `${returnUrl}${separator}zuu_success=true&paid=${paymentData.amount}&credited=${paymentData.originalAmount}&type=${paymentData.type}`;
-                    }, 2000);
+                    }, 2500);
                 } catch(err) {
                     alert('Payment Error: ' + err.message);
                     document.getElementById('zpPayBtn').innerText = `Pay ₹${paymentData.amount} Instantly`;
@@ -1244,7 +1286,6 @@ if (urlParams.get('action') === 'payment' && urlParams.get('data')) {
         }
     };
 
-    // ফায়ারবেস অথেনটিকেশন চেক 
     onAuthStateChanged(auth, async (user) => {
         if (user) {
             const snap = await getDoc(doc(db, "users", user.uid));
@@ -1255,7 +1296,7 @@ if (urlParams.get('action') === 'payment' && urlParams.get('data')) {
     });
 }
 </script>
-<!-- ================= [ END ZUU PAY OVERRIDE ] ================= -->
-
+<!-- ================= [ END ZUU PAY OVERRIDE (UPDATED) ] ================= -->
+  
 </body>
 </html>
