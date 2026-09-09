@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Zuu Pay Premium</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-color: #000000;
+            --primary-dark: #1f1f1f;
+            --primary-light: #333333;
+            --accent-color: #00e676;
+            --gold-gradient: linear-gradient(135deg, #ffe53b, #ff2525);
+            --gold-wallet: linear-gradient(135deg, #ffd700, #ffaa00);
+            --premium-gradient: linear-gradient(135deg, #111111, #222222);
+            --card-bg: #141414;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --nav-bg: #0d0d0d;
+            --active-icon: #00e676;
+            --inactive-icon: #777777;
+            --danger: #ff4757;
+            --success: #00e676;
+            --border-color: #2a2a2a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); overflow: hidden; font-size: 14px; width: 100vw; height: 100vh; }
+
+        .screen { display: none; height: 100vh; width: 100vw; overflow-y: auto; overflow-x: hidden; padding-bottom: 80px; }
+        .active-screen { display: block; }
+        
+        /* Premium Header */
+        .app-header {
+            background: var(--premium-gradient);
+            padding: 20px; color: white; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+            display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .header-title { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+        .back-btn { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
+        
+        .card { background: var(--card-bg); border-radius: 20px; padding: 20px; margin: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
+        .input-group { margin-bottom: 15px; text-align: left; }
+        .input-group label { display: block; margin-bottom: 5px; color: var(--text-muted); font-size: 0.9rem; font-weight: 500;}
+        .input-group input { width: 100%; padding: 15px; border: 1.5px solid var(--border-color); border-radius: 12px; font-size: 1rem; outline: none; transition: 0.3s; background: var(--primary-dark); color: var(--text-main);}
+        .input-group input:focus { border-color: var(--accent-color); background: var(--primary-light); }
+        
+        .btn-primary { background: var(--primary-light); color: white; border: 1px solid var(--border-color); padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 600; cursor: pointer; transition: 0.3s; }
+        .btn-primary:active { transform: scale(0.98); }
+        
+        .btn-success { background: linear-gradient(45deg, #00b09b, #96c93d); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 600; cursor: pointer; position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0, 230, 118, 0.4); transition: 0.3s;}
+        .btn-danger { background: linear-gradient(45deg, #ff416c, #ff4b2b); color: white; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4); transition: 0.3s;}
+        
+        /* UPDATE 1: Golden Button */
+        .btn-golden { background: linear-gradient(135deg, #FFD700, #FFAA00); color: #000; border: none; padding: 15px; border-radius: 12px; width: 100%; font-size: 1rem; font-weight: 700; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4); transition: 0.3s; margin-top: 10px; }
+        .btn-golden:active { transform: scale(0.95); }
+
+        /* Auth */
+        .auth-header-logo { text-align: center; margin-bottom: 10px; margin-top: 40px; color: var(--accent-color); font-size: 2.5rem; font-weight: 700; letter-spacing: -1px; }
+
+        /* Home Header Info & Golden Profiles */
+        .user-info-header { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+        .header-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ffd700; box-shadow: 0 0 8px rgba(255, 215, 0, 0.5); background: var(--primary-light); flex-shrink: 0; }
+        .profile-avatar-lg { width: 100px; height: 100px; border-radius: 50%; border: 3px solid #ffd700; box-shadow: 0 0 15px rgba(255, 215, 0, 0.4); object-fit: cover; background: var(--primary-dark); }
+        
+        .header-text-info { display: flex; flex-direction: column; overflow: hidden; max-width: calc(100% - 100px); }
+        .header-text-info h4 { font-size: 1rem; font-weight: 600; margin: 0; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-text-info p { font-size: 0.75rem; color: var(--text-muted); margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .zuu-id-display { text-align: right; background: rgba(255,255,255,0.05); padding: 5px 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1); flex-shrink: 0; margin-left: 10px; }
+
+        /* Golden Wallet */
+        .balance-card { background: var(--gold-wallet); margin: 20px 20px; padding: 25px 20px; border-radius: 20px; box-shadow: 0 10px 25px rgba(255, 170, 0, 0.4); text-align: center; position: relative; z-index: 10; color: #3a2500; overflow: hidden; border: 1px solid rgba(255,255,255,0.4);}
+        .balance-card h4 { font-weight: 600; font-size: 0.9rem; opacity: 0.9; margin-bottom: 5px; }
+        .btn-check-balance { background: #111; color: var(--accent-color); border: 1px solid #333; padding: 10px 25px; border-radius: 30px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .actual-bal { font-size: 2.5rem; font-weight: 700; margin: 5px 0 0; text-shadow: 1px 1px 2px rgba(255,255,255,0.3); display: none; }
+        
+        /* Typing Animation for Balance */
+        .checking-text { font-size: 1.3rem; font-weight: 500; color: #4a3000; display: inline-block; animation: pulse 1s infinite; margin-top: 10px; }
+        @keyframes pulse { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
+
+        .action-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; padding: 0 15px; margin-bottom: 20px; }
+        .action-item { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; }
+        .action-icon { width: 55px; height: 55px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; display: flex; justify-content: center; align-items: center; color: var(--accent-color); font-size: 1.4rem; box-shadow: 0 5px 15px rgba(0,0,0,0.2); transition: 0.3s; }
+        .action-item span { font-size: 0.8rem; font-weight: 500; color: var(--text-main); }
+
+        /* Bottom Nav */
+        .bottom-nav { 
+            position: fixed; bottom: 0; left: 0; width: 100%; background: var(--nav-bg); 
+            display: flex; justify-content: space-around; padding: 12px 0 20px; 
+            box-shadow: 0 -5px 20px rgba(0,0,0,0.5); border-top-left-radius: 25px; 
+            border-top-right-radius: 25px; z-index: 100; border-top: 1px solid var(--border-color);
+            transform: translateY(150%); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: none;
+        }
+        .bottom-nav.show { transform: translateY(0); display: flex; }
+        
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--inactive-icon); font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: 0.3s; }
+        .nav-item.active { color: var(--active-icon); transform: translateY(-3px); }
+        .nav-item i { font-size: 1.2rem; }
+
+        /* UPDATE 2: Premium Pay Screen Styles */
+        .premium-pay-card { background: linear-gradient(145deg, #151515, #0a0a0a); border: 1px solid rgba(0, 230, 118, 0.2); box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5); text-align: center; border-radius: 25px; padding: 40px 20px; margin: 20px 15px; }
+        .premium-pay-card .pay-amount-input { font-size: 3.5rem; text-align: left; border: none; background: transparent; color: #fff; width: 100%; outline: none; font-weight: 700; padding: 0; margin: 0; }
+        .premium-pay-card .pay-amount-input::placeholder { color: rgba(255,255,255,0.2); }
+
+        /* Professional Scanner UI */
+        #scanner-box { 
+            position: relative; border-radius: 15px; overflow: hidden; background: #000; 
+            border: 2px solid var(--accent-color); display: flex; justify-content: center; align-items: center; min-height: 250px; 
+        }
+        #scanner-box::before, #scanner-box::after { content: ''; position: absolute; width: 40px; height: 40px; z-index: 10; pointer-events: none; }
+        #scanner-box::before { top: 15px; left: 15px; border-top: 4px solid var(--accent-color); border-left: 4px solid var(--accent-color); }
+        #scanner-box::after { bottom: 15px; right: 15px; border-bottom: 4px solid var(--accent-color); border-right: 4px solid var(--accent-color); }
+        
+        .scan-laser { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 3px; 
+            background: var(--accent-color); box-shadow: 0 0 15px var(--accent-color); 
+            animation: laser 2.5s infinite ease-in-out; z-index: 20; display: none; 
+        }
+        @keyframes laser { 0% { top: 5%; opacity: 0; } 10% { opacity: 1; } 50% { top: 95%; } 90% { opacity: 1; } 100% { top: 5%; opacity: 0; } }
+
+        .send-money-box { background: var(--primary-dark); padding: 30px 20px; border-radius: 20px; text-align: center; border: 1px solid var(--accent-color); box-shadow: 0 10px 30px rgba(0, 230, 118, 0.1); }
+        .send-icon-wrapper { width: 70px; height: 70px; background: rgba(0, 230, 118, 0.1); color: var(--accent-color); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 2rem; margin: 0 auto 20px; }
+        
+        .upi-display-box { background: var(--primary-dark); border: 1.5px dashed var(--accent-color); border-radius: 15px; padding: 20px; text-align: center; margin-bottom: 20px; position: relative; }
+        .upi-display-box .copy-icon { position: absolute; top: 15px; right: 15px; color: var(--accent-color); cursor: pointer; font-size: 1.2rem; }
+
+        .profile-pic-container { position: relative; width: 100px; height: 100px; margin: 0 auto 15px; }
+        .cam-btn { position: absolute; bottom: 0; right: 0; background: var(--accent-color); color: #000; width: 32px; height: 32px; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; border: 2px solid var(--card-bg); box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        
+        .chat-list { list-style: none; padding: 0; margin: 0; }
+        .chat-item { display: flex; align-items: center; padding: 15px; background: var(--card-bg); border-bottom: 1px solid var(--border-color); cursor: pointer; transition: 0.2s; border-radius: 12px; margin-bottom: 8px; }
+        .chat-item:hover { background: var(--primary-dark); border-color: var(--accent-color); }
+        .chat-avatar { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; background: var(--primary-light); color: white; display: flex; justify-content: center; align-items: center; font-size: 1.2rem; margin-right: 15px; border: 1px solid var(--border-color); flex-shrink: 0; }
+
+        /* Loader & Modals */
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; display: none; justify-content: center; align-items: center; flex-direction: column; }
+        .spinner { border: 4px solid #333; border-top: 4px solid var(--accent-color); border-radius: 50%; width: 45px; height: 45px; animation: spin 1s linear infinite; margin-bottom: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .pin-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; padding: 15px; }
+        .pin-box { background: var(--card-bg); padding: 25px 20px; border-radius: 20px; width: 100%; max-width: 380px; text-align: center; border: 1px solid var(--border-color); box-shadow: 0 10px 40px rgba(0,0,0,0.7); }
+        
+        /* UPDATE 1: Circle PIN Inputs & Keyboard */
+        .pin-inputs { display: flex; justify-content: center; gap: 10px; margin: 20px 0; }
+        .pin-inputs input { width: 45px; height: 45px; font-size: 1.8rem; text-align: center; border: 2px solid var(--border-color); border-radius: 50%; outline: none; background: var(--primary-dark); color: white; -webkit-text-security: disc; pointer-events: none; transition: 0.3s; }
+        .pin-inputs input.active { border-color: #ffd700; box-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+        
+        .virtual-keyboard { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 25px; }
+        .virtual-keyboard .key { background: transparent; color: white; padding: 15px; border-radius: 50px; font-size: 1.5rem; font-weight: 500; cursor: pointer; user-select: none; transition: 0.15s; display: flex; justify-content: center; align-items: center; }
+        .virtual-keyboard .key:active { background: var(--primary-light); transform: scale(0.9); }
+        .virtual-keyboard .key.del { color: var(--danger); font-size: 1.2rem; }
+    </style>
+</head>
+<body>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-text" style="font-weight: 500; color: white;">Processing...</p>
+    </div>
+
+    <!-- Payment Success Modal -->
+    <div id="payment-success-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; justify-content:center; align-items:center; flex-direction:column; backdrop-filter: blur(5px);">
+        <div style="background: var(--primary-dark); padding: 40px 30px; border-radius: 24px; text-align: center; border: 2px solid var(--success); box-shadow: 0 15px 40px rgba(0, 230, 118, 0.2); animation: scaleIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <div style="width: 90px; height: 90px; background: var(--success); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 20px; box-shadow: 0 0 20px rgba(0, 230, 118, 0.6);">
+                <i class="fas fa-check" style="font-size: 3.5rem; color: #000;"></i>
+            </div>
+            <h2 style="color: var(--success); margin-bottom: 10px; font-weight: 600;">Zuu Payment Done</h2>
+            <h1 id="success-amount" style="font-size: 3rem; margin-bottom: 5px; color: white;">₹0.00</h1>
+            <p id="success-name" style="color: var(--text-muted); font-size: 1.1rem;">To: Receiver Name</p>
+        </div>
+    </div>
+
+    <!-- PIN Setup Modal -->
+    <div id="pin-setup-modal" class="pin-modal">
+        <div class="pin-box">
+            <h3 style="margin-bottom:10px;">Security PIN Setup</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">একটি ৬-ডিজিটের পিন সেট করুন। এটি পরে আর পরিবর্তন করা যাবে না।</p>
+            <div class="pin-inputs" id="setup-pin-container">
+                <input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1">
+                <input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1">
+            </div>
+            <button class="btn-golden" id="btn-save-pin">Save PIN Permanently</button>
+            
+            <div class="virtual-keyboard">
+                <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+                <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+                <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+                <div class="key" style="visibility:hidden;"></div><div class="key">0</div><div class="key del"><i class="fas fa-backspace"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIN Verify Modal -->
+    <div id="pin-verify-modal" class="pin-modal">
+        <div class="pin-box">
+            <h3 style="margin-bottom:10px;">Enter Security PIN</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">পেমেন্ট সম্পূর্ণ করতে বা ব্যালেন্স দেখতে ৬-ডিজিটের পিন দিন।</p>
+            <div class="pin-inputs" id="verify-pin-container">
+                <input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1">
+                <input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1"><input type="password" readonly maxlength="1">
+            </div>
+            <button class="btn-golden" id="btn-verify-pin">Verify & Proceed</button>
+            
+            <div class="virtual-keyboard">
+                <div class="key">1</div><div class="key">2</div><div class="key">3</div>
+                <div class="key">4</div><div class="key">5</div><div class="key">6</div>
+                <div class="key">7</div><div class="key">8</div><div class="key">9</div>
+                <div class="key" style="visibility:hidden;"></div><div class="key">0</div><div class="key del"><i class="fas fa-backspace"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="screen active-screen" style="background: var(--bg-color); display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div class="auth-header-logo" style="font-size:3.5rem;">Zuu Pay</div>
+        <p style="font-weight: 300; letter-spacing: 2px; color: var(--text-muted);">PREMIUM</p>
+    </div>
+
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="screen">
+        <div class="auth-header-logo">Zuu Pay</div>
+        <p style="text-align: center; color: var(--text-muted); margin-bottom: 25px;" id="auth-subtitle">লগইন করুন</p>
+        
+        <div class="card">
+            <div id="login-form">
+                <div class="input-group">
+                    <input type="email" id="login-email" placeholder="Email Address">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="login-password" placeholder="Password">
+                </div>
+                <button class="btn-primary" id="btn-login" style="background: var(--accent-color); color: #000;">Login</button>
+                <p style="text-align: center; margin-top: 20px; font-size: 0.95rem;">একাউন্ট নেই? <span style="color:var(--accent-color); cursor:pointer; font-weight:bold;" onclick="toggleAuth('signup')">তৈরি করুন</span></p>
+            </div>
+
+            <div id="signup-form" style="display: none;">
+                <div class="input-group">
+                    <input type="text" id="signup-name" placeholder="Full Name">
+                </div>
+                <div class="input-group">
+                    <input type="email" id="signup-email" placeholder="Email Address">
+                </div>
+                <div class="input-group">
+                    <input type="password" id="signup-password" placeholder="Password">
+                </div>
+                <button class="btn-primary" id="btn-signup" style="background: var(--accent-color); color: #000;">Sign Up</button>
+                <p style="text-align: center; margin-top: 20px; font-size: 0.95rem;">আগে থেকেই একাউন্ট আছে? <span style="color:var(--accent-color); cursor:pointer; font-weight:bold;" onclick="toggleAuth('login')">লগইন করুন</span></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Home Screen -->
+    <div id="main-app" class="screen">
+        <div class="app-header">
+            <div class="user-info-header">
+                <img src="https://via.placeholder.com/150" id="header-profile-pic" class="header-avatar" alt="Profile">
+                <div class="header-text-info">
+                    <h4 id="header-user-name">User Name</h4>
+                    <p id="header-user-email">user@email.com</p>
+                </div>
+            </div>
+            <div class="zuu-id-display">
+                <p style="font-size: 0.65rem; margin:0; color: var(--text-muted);">Zuu ID</p>
+                <strong id="display-zuuid" style="font-size: 0.9rem; letter-spacing: 1px; color: white;">---------</strong>
+            </div>
+        </div>
+
+        <div class="balance-card">
+            <h4>টোটাল ব্যালেন্স</h4>
+            <button class="btn-check-balance" id="home-btn-bal" onclick="verifyAndShowBalance('home')">Check Balance</button>
+            <h1 id="home-actual-bal" class="actual-bal">₹ 0.00</h1>
+        </div>
+
+        <div class="action-grid">
+            <div class="action-item" onclick="navTo('scan-screen')">
+                <div class="action-icon"><i class="fas fa-qrcode"></i></div>
+                <span>Scan</span>
+            </div>
+            <div class="action-item" onclick="navTo('send-screen')">
+                <div class="action-icon"><i class="fas fa-paper-plane"></i></div>
+                <span>Send</span>
+            </div>
+            <div class="action-item" onclick="navTo('bank-screen')">
+                <div class="action-icon"><i class="fas fa-university"></i></div>
+                <span>Bank</span>
+            </div>
+            <div class="action-item" onclick="navTo('profile-screen')">
+                <div class="action-icon"><i class="fas fa-user"></i></div>
+                <span>Profile</span>
+            </div>
+        </div>
+        
+        <div id="admin-panel-btn" style="display: none; padding: 0 20px; margin-bottom: 20px;">
+            <button class="btn-primary" style="background: var(--danger); border:none;" onclick="navTo('admin-screen')"><i class="fas fa-shield-alt"></i> Admin Panel</button>
+        </div>
+
+        <div style="padding: 0 20px;">
+            <h3 style="font-size: 1.1rem; margin-bottom: 15px; font-weight: 600;">Recent Transactions</h3>
+            <div id="recent-activity-list" class="card" style="margin:0; padding: 15px;">
+                <p style="text-align:center; color:var(--text-muted); font-size:0.9rem; margin:10px 0;">কোনো লেনদেন নেই</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan Screen -->
+    <div id="scan-screen" class="screen">
+        <div class="app-header">
+            <button class="back-btn" onclick="navTo('main-app')"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title">QR Scanner</div>
+            <div style="width: 20px;"></div>
+        </div>
+        
+        <div class="card" style="margin-top: 15px; padding: 0; overflow: hidden;">
+            <div style="display:flex; justify-content:space-around; background: var(--primary-dark); border-bottom: 1px solid var(--border-color);">
+                <div id="tab-btn-scan" style="padding: 15px; flex: 1; text-align: center; font-weight: 600; color: var(--accent-color); border-bottom: 2px solid var(--accent-color); cursor: pointer;" onclick="switchScanTab('scan')">
+                    <i class="fas fa-camera"></i> Scan QR
+                </div>
+                <div id="tab-btn-qr" style="padding: 15px; flex: 1; text-align: center; font-weight: 600; color: var(--text-muted); cursor: pointer;" onclick="switchScanTab('qr')">
+                    <i class="fas fa-qrcode"></i> My QR
+                </div>
+            </div>
+
+            <div style="padding: 20px;">
+                <div id="scan-container">
+                    <div id="scanner-box">
+                        <div class="scan-laser" id="scan-laser-line"></div>
+                        <div id="reader" style="width: 100%; border-radius: 12px; overflow: hidden;"></div>
+                    </div>
+                    
+                    <div style="margin-top: 25px; text-align: center;">
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">অথবা গ্যালারি থেকে ছবি নিন</p>
+                        <label class="btn-primary" style="background:var(--primary-light); cursor:pointer; display: inline-block; width: 100%; padding: 12px;">
+                            <i class="fas fa-image" style="margin-right: 5px;"></i> Upload from Gallery
+                            <input type="file" id="qr-upload" accept="image/*" style="display:none;">
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="my-qr-box" style="display: none; flex-direction: column; align-items: center; padding-top: 10px;">
+                    <img src="" id="qr-profile-pic" class="profile-avatar-lg" style="width:80px; height:80px; margin-bottom:10px;">
+                    <h3 style="color: var(--text-main); margin-bottom: 5px; font-size: 1.3rem;" id="qr-name">Name</h3>
+                    <p style="font-size: 1.1rem; font-weight:bold; letter-spacing: 2px; margin-bottom: 20px; color: var(--accent-color);" id="qr-zuuid">0000000000</p>
+                    
+                    <div id="qrcode-gen" style="background: white; padding: 15px; border-radius: 15px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.2);"></div>
+                    
+                    <button class="btn-primary" style="margin-top: 25px; background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color);" onclick="downloadQR()">
+                        <i class="fas fa-download"></i> Download QR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Send Screen -->
+    <div id="send-screen" class="screen">
+        <div class="app-header">
+            <button class="back-btn" onclick="navTo('main-app')"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title">Send Money</div>
+            <div style="width: 20px;"></div>
+        </div>
+        
+        <div style="padding: 20px; margin-top: 10px;">
+            <div class="send-money-box">
+                <div class="send-icon-wrapper">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <h3 style="margin-bottom: 10px; color: #fff;">Send to Zuu ID</h3>
+                <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:25px;">প্রাপকের 10 সংখ্যার Zuu ID দিন</p>
+                
+                <div class="input-group" style="margin-bottom: 25px;">
+                    <input type="text" id="send-zuuid" inputmode="numeric" placeholder="1234 567 890" maxlength="10" style="text-align: center; font-size: 1.5rem; letter-spacing: 3px; font-weight:bold; background: var(--card-bg); border: 2px solid var(--primary-light);">
+                </div>
+                <button class="btn-primary" id="btn-verify-zuuid" style="background: var(--accent-color); color: #000; border: none; font-size: 1.1rem; padding: 15px;">Proceed Securely <i class="fas fa-arrow-right" style="margin-left: 8px;"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Screen (UPDATED DESIGN) -->
+    <div id="pay-screen" class="screen">
+        <div class="app-header">
+            <button class="back-btn" onclick="navTo('main-app')"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title">Secure Payment</div>
+            <div style="width: 20px;"></div>
+        </div>
+        
+        <div class="premium-pay-card">
+            <div class="profile-pic-container" style="margin-bottom: 15px;">
+                <img src="https://via.placeholder.com/150" id="pay-receiver-pic" class="profile-avatar-lg" style="width: 90px; height: 90px; border-color: var(--accent-color); box-shadow: 0 0 25px rgba(0, 230, 118, 0.2);">
+            </div>
+            <h3 id="pay-receiver-name" style="font-size: 1.6rem; margin-bottom: 5px; font-weight: 600;">Receiver Name</h3>
+            <p id="pay-receiver-zuuid" style="color: var(--text-muted); font-size: 1rem; margin-bottom: 35px; letter-spacing: 1px;">ID: 0000000000</p>
+            
+            <div style="background: rgba(255,255,255,0.02); padding: 25px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.05); margin-bottom: 30px;">
+                <label style="font-size: 1rem; color: var(--text-muted); display:block; margin-bottom: 10px;">অ্যামাউন্ট (₹)</label>
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <span style="font-size: 3.5rem; color: var(--accent-color); font-weight: bold; margin-right: 8px;">₹</span>
+                    <input type="number" id="pay-amount" class="pay-amount-input" placeholder="0" style="width: 150px;">
+                </div>
+                <div style="height: 2px; background: var(--accent-color); width: 80%; margin: 10px auto 0; box-shadow: 0 0 10px var(--accent-color);"></div>
+            </div>
+            
+            <button class="btn-primary" id="btn-init-pay" style="font-size: 1.2rem; padding: 18px; border-radius: 15px; background: linear-gradient(135deg, #00e676, #00b09b); color:#000; border:none; box-shadow: 0 8px 25px rgba(0, 230, 118, 0.3); font-weight: bold;">Pay Now</button>
+        </div>
+    </div>
+
+    <!-- Bank Screen -->
+    <div id="bank-screen" class="screen">
+        <div class="app-header">
+            <button class="back-btn" onclick="navTo('main-app')"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title">Bank Services</div>
+            <div style="width: 20px;"></div>
+        </div>
+
+        <div class="balance-card" style="margin-top: 30px;">
+            <h4 style="color: #3a2500;">Wallet Balance</h4>
+            <button class="btn-check-balance" id="bank-btn-bal" onclick="verifyAndShowBalance('bank')">Check Balance</button>
+            <h1 id="bank-actual-bal" style="font-size: 2.5rem; color: #221500; font-weight: 700; display: none; margin-top: 5px;">₹ 0.00</h1>
+        </div>
+
+        <div style="display: flex; gap: 15px; padding: 20px; margin-top: 10px;">
+            <button class="btn-success" onclick="navTo('add-money-screen')"><i class="fas fa-plus-circle" style="margin-right:5px;"></i> Add Money</button>
+            <button class="btn-danger" onclick="navTo('withdraw-screen')"><i class="fas fa-arrow-circle-down" style="margin-right:5px;"></i> Withdraw</button>
+        </div>
+    </div>
+
+    <!-- Add Money Screen -->
+    <div id="add-money-screen" class="screen">
+        <div class="app-header">
+            <button class="back-btn" onclick="navTo('bank-screen')"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title">Add Money</div>
+            <div style="width: 20px;"></div>
+        </div>
+        <div class="card" style="margin-top: 20px;">
+            <h3 style="margin-bottom: 20px; font-size:1.1rem; text-align: center; color: var(--accent-color);">Secure Add Money</h3>
+            
+            <div class="upi-display-box">
+                <i class="fas fa-copy copy-icon" onclick="copyUPI()"></i>
+                <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 5px;">Send Payment to Admin UPI</p>
+                <strong id="admin-upi-id" style="font-size: 1.2rem; color: white; letter-spacing: 1px;">8391921082@ibl</strong>
+            </div>
+
+            <div class="input-group">
+                <label>Amount Paid (₹)</label>
+                <input type="number" id="add-amount" placeholder="Ex: 500">
+            </div>
+            <div class="input-group">
+                <label>UPI Transaction ID</label>
+                <input type="text" id="add-txn-id" placeholder="Enter 12-digit UTR/Txn ID">
+            </div>
+            <button class="btn-success" id="btn-add-money" style="font-size: 1.1rem; padding: 15px; margin-top: 10px;">Submit Request</button>
+        </div>
+    </div>
+
+    <!-- Withdraw Screen -->
+    <div id="withdraw-screen" class="screen">
+        <div class="app-header">
+            <button class="back-btn" onclick="navTo('bank-screen')"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title">Withdraw Funds</div>
+            <div style="width: 20px;"></div>
+        </div>
+        <div class="card" style="margin-top: 20px;">
+            <h3 style="margin-bottom: 20px; font-size:1.1rem; text-align: center; color: var(--danger);">Withdraw to Bank</h3>
+            <div class="input-group">
+                <label>Withdrawal Amount (₹)</label>
+                <input type="number" id="wd-amount" placeholder="Amount">
+            </div>
+            <div class="input-group">
+                <label>Your Receiving UPI ID</label>
+                <input type="text" id="wd-upi" placeholder="you@upi">
+            </div>
+            <button class="btn-danger" id="btn-init-withdraw" style="padding: 15px; font-size: 1.1rem; margin-top: 10px;">Request Withdrawal</button>
+        </div>
+    </div>
+
+    <!-- Search Screen -->
+    <div id="search-screen" class="screen">
+        <div class="app-header">
+            <div class="header-title">Search Users</div>
+        </div>
+        <div style="padding: 20px;">
+            <div class="input-group" style="display: flex; gap: 10px;">
+                <input type="text" id="search-input" placeholder="Search by ID or Email" style="margin-bottom:0;">
+                <button class="btn-primary" id="btn-search" style="width: 60px; padding: 0; background: var(--accent-color); color: #000; border: none;"><i class="fas fa-search"></i></button>
+            </div>
+        </div>
+        <ul class="chat-list" id="search-results-list" style="padding: 0 10px;"></ul>
+    </div>
+
+    <!-- Chat / Contacts -->
+    <div id="chat-screen" class="screen">
+        <div class="app-header">
+            <div class="header-title">Recent Contacts</div>
+        </div>
+        <p style="padding: 10px 20px 0; font-size: 0.8rem; color: var(--text-muted); text-align: center;">যাদের আপনি পেমেন্ট করেছেন তাদের লিস্ট। ক্লিক করে পে করুন।</p>
+        <ul class="chat-list" id="contacts-list" style="padding: 15px;">
+            <p style="text-align:center; padding: 30px; color:var(--text-muted);">কোনো কন্টাক্ট নেই</p>
+        </ul>
+    </div>
+
+    <!-- Profile Screen -->
+    <div id="profile-screen" class="screen">
+        <div class="app-header">
+            <div class="header-title">My Profile</div>
+            <button class="back-btn" id="btn-logout" style="font-size: 0.9rem; background:rgba(255,255,255,0.1); padding:5px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.2);"><i class="fas fa-sign-out-alt"></i> Logout</button>
+        </div>
+        <div class="card" style="margin-top: 20px; padding: 30px 20px;">
+            <div class="profile-pic-container">
+                <img src="https://via.placeholder.com/150" id="prof-pic-large" class="profile-avatar-lg">
+                <label class="cam-btn" for="profile-pic-upload">
+                    <i class="fas fa-camera"></i>
+                </label>
+                <input type="file" id="profile-pic-upload" accept="image/*" style="display: none;">
+            </div>
+            
+            <div style="background: var(--primary-dark); padding: 15px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: space-between; border: 1px solid var(--border-color);">
+                <span style="color:var(--text-muted); font-weight:500;">Zuu ID</span>
+                <strong id="prof-zuuid" style="letter-spacing: 1px; color:var(--accent-color);">0000000000</strong>
+            </div>
+            
+            <h4 style="margin-top: 20px; margin-bottom: 15px; color: var(--accent-color);">Personal Information</h4>
+            
+            <div class="input-group">
+                <label>Full Name</label>
+                <input type="text" id="prof-edit-name" placeholder="Your Name">
+            </div>
+            <div class="input-group">
+                <label>Date of Birth</label>
+                <input type="date" id="prof-edit-dob">
+            </div>
+            <div class="input-group" style="opacity: 0.7; pointer-events: none;">
+                <label>Email Address</label>
+                <input type="email" id="prof-email-display" readonly>
+            </div>
+            
+            <button class="btn-primary" id="btn-update-profile" style="background: var(--accent-color); color: #000; border:none; margin-bottom: 20px;">Save Changes</button>
+            
+            <div style="background: var(--primary-dark); padding: 15px; border-radius: 12px; display: flex; justify-content: space-between; border: 1px solid var(--border-color);">
+                <span style="color:var(--text-muted); font-weight:500;">PIN Status</span>
+                <strong id="prof-pin-status" style="color:var(--success);">Set</strong>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Admin Screen -->
+    <div id="admin-screen" class="screen">
+        <div class="app-header" style="background: var(--danger);">
+            <button class="back-btn" onclick="navTo('main-app')"><i class="fas fa-arrow-left"></i></button>
+            <div class="header-title">Admin Dashboard</div>
+            <div style="width: 20px;"></div>
+        </div>
+        <div style="padding: 20px;">
+            <h3 style="margin-bottom: 15px; font-size:1.1rem;">Add Money Requests</h3>
+            <div id="admin-add-reqs"></div>
+            <h3 style="margin: 25px 0 15px; font-size:1.1rem;">Withdraw Requests</h3>
+            <div id="admin-wd-reqs"></div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav" id="main-bottom-nav">
+        <div class="nav-item active" onclick="navTo('main-app')"><i class="fas fa-home"></i><span>Home</span></div>
+        <div class="nav-item" onclick="navTo('search-screen')"><i class="fas fa-search"></i><span>Search</span></div>
+        <div class="nav-item" onclick="navTo('scan-screen')"><i class="fas fa-qrcode"></i><span>Scan</span></div>
+        <div class="nav-item" onclick="navTo('chat-screen')"><i class="fas fa-address-book"></i><span>Contacts</span></div>
+        <div class="nav-item" onclick="navTo('profile-screen')"><i class="fas fa-user-circle"></i><span>Profile</span></div>
+    </div>
+
+    <!-- Firebase Configuration & Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot, collection, query, where, getDocs, runTransaction, serverTimestamp, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBbBKnhSe4Oy43DSQAYJa5wiuR-rktw3Cc",
+            authDomain: "zuu-pay.firebaseapp.com",
+            databaseURL: "https://zuu-pay-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "zuu-pay",
+            storageBucket: "zuu-pay.firebasestorage.app",
+            messagingSenderId: "119466521939",
+            appId: "1:119466521939:web:b47248cc997b2dd602dda6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        let currentUserData = null;
+        let paymentReceiverData = null;
+        let html5QrcodeScanner = null;
+        let pendingAction = null; 
+        
+        const CLOUDINARY_URL = "https://api.cloudinary.com/v1_1/dzt2shn4m/image/upload";
+        const CLOUDINARY_PRESET = "Zuupay";
+        const DEFAULT_PIC = "https://cdn-icons-png.flaticon.com/512/149/149071.png";
+
+        function showLoader(text="Processing...") {
+            document.getElementById('loading-text').innerText = text;
+            document.getElementById('loading-overlay').style.display = 'flex';
+        }
+        function hideLoader() { document.getElementById('loading-overlay').style.display = 'none'; }
+
+        // Virtual Keyboard & PIN Logic 
+        function setupVirtualKeyboard(containerId, modalId) {
+            let currentPin = "";
+            const inputs = document.querySelectorAll(`#${containerId} input`);
+            const keys = document.querySelectorAll(`#${modalId} .virtual-keyboard .key`);
+
+            function updateDisplay() {
+                inputs.forEach((input, idx) => {
+                    input.value = currentPin[idx] || "";
+                    if(idx === currentPin.length || (currentPin.length === 6 && idx === 5)) {
+                        input.classList.add('active');
+                    } else {
+                        input.classList.remove('active');
+                    }
+                });
+            }
+
+            keys.forEach(key => {
+                key.addEventListener('click', () => {
+                    if (key.style.visibility === 'hidden') return;
+                    if(key.classList.contains('del')) {
+                        currentPin = currentPin.slice(0, -1);
+                    } else {
+                        if(currentPin.length < 6) currentPin += key.innerText;
+                    }
+                    updateDisplay();
+                });
+            });
+            
+            window[`get_${containerId}`] = () => currentPin;
+            window[`clear_${containerId}`] = () => { currentPin = ""; updateDisplay(); };
+            updateDisplay();
+        }
+
+        setupVirtualKeyboard('setup-pin-container', 'pin-setup-modal');
+        setupVirtualKeyboard('verify-pin-container', 'pin-verify-modal');
+
+        window.closePinModal = function() {
+            document.querySelectorAll('.pin-modal').forEach(m => m.style.display = 'none');
+            pendingAction = null;
+        }
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const userRef = doc(db, "users", user.uid);
+                let docSnap = await getDoc(userRef);
+                
+                if (!docSnap.exists()) {
+                    await setDoc(userRef, {
+                        uid: user.uid, name: user.displayName || 'User', email: user.email,
+                        balance: 0, dob: '', zuuId: Math.floor(1000000000 + Math.random() * 9000000000).toString(),
+                        profilePic: DEFAULT_PIC, pin: null, contacts: [], createdAt: serverTimestamp()
+                    });
+                }
+                
+                onSnapshot(userRef, (docSnap) => {
+                    currentUserData = docSnap.data();
+                    const pic = currentUserData.profilePic || DEFAULT_PIC;
+                    
+                    document.getElementById('display-zuuid').innerText = currentUserData.zuuId;
+                    document.getElementById('header-profile-pic').src = pic;
+                    document.getElementById('header-user-name').innerText = currentUserData.name;
+                    document.getElementById('header-user-email').innerText = currentUserData.email;
+                    
+                    document.getElementById('prof-email-display').value = currentUserData.email;
+                    document.getElementById('prof-edit-name').value = currentUserData.name;
+                    if(currentUserData.dob) document.getElementById('prof-edit-dob').value = currentUserData.dob;
+                    
+                    document.getElementById('prof-zuuid').innerText = currentUserData.zuuId;
+                    document.getElementById('prof-pic-large').src = pic;
+                    document.getElementById('qr-profile-pic').src = pic;
+                    
+                    document.getElementById('prof-pin-status').innerText = currentUserData.pin ? "Set (Secured)" : "Not Set";
+                    document.getElementById('prof-pin-status').style.color = currentUserData.pin ? "var(--success)" : "var(--danger)";
+                    
+                    document.getElementById('qr-name').innerText = currentUserData.name;
+                    document.getElementById('qr-zuuid').innerText = currentUserData.zuuId;
+                    document.getElementById('qrcode-gen').innerHTML = "";
+                    new QRCode(document.getElementById("qrcode-gen"), { text: currentUserData.zuuId, width: 200, height: 200, colorDark: "#000000", colorLight: "#ffffff" });
+                    
+                    if(currentUserData.email === "Star@gmail.com") {
+                        document.getElementById('admin-panel-btn').style.display = 'block';
+                        loadAdminData();
+                    }
+                    
+                    if(!currentUserData.pin && document.getElementById('splash-screen').style.display === 'none') {
+                        document.getElementById('pin-setup-modal').style.display = 'flex';
+                        window['clear_setup-pin-container']();
+                    }
+                });
+                
+                loadRecentActivity(user.uid);
+                setTimeout(() => { document.getElementById('splash-screen').style.display = 'none'; navTo('main-app'); }, 1000);
+            } else {
+                document.getElementById('splash-screen').style.display = 'none'; navTo('auth-screen');
+            }
+        });
+
+        function loadContacts() {
+            const listDiv = document.getElementById('contacts-list');
+            const contacts = currentUserData.contacts || [];
+            if(contacts.length === 0) return listDiv.innerHTML = '<p style="text-align:center; padding: 30px; color:var(--text-muted);">কোনো কন্টাক্ট নেই</p>';
+            listDiv.innerHTML = '';
+            contacts.forEach(c => {
+                listDiv.innerHTML += `
+                    <li class="chat-item" onclick="handleZuuIdInput('${c.zuuId}')">
+                        <img src="${c.pic || DEFAULT_PIC}" class="chat-avatar" style="border-color: #ffd700;">
+                        <div class="chat-info">
+                            <div style="font-weight:600; font-size: 1rem; color: #fff;">${c.name}</div>
+                            <div style="font-size:0.8rem; color:var(--accent-color);">ID: ${c.zuuId}</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:var(--text-muted); margin-left:auto;"></i>
+                    </li>`;
+            });
+        }
+
+        // Auth
+        window.toggleAuth = function(type) {
+            document.getElementById('login-form').style.display = type === 'signup' ? 'none' : 'block';
+            document.getElementById('signup-form').style.display = type === 'signup' ? 'block' : 'none';
+            document.getElementById('auth-subtitle').innerText = type === 'signup' ? "নতুন একাউন্ট তৈরি করুন" : "লগইন করুন";
+        };
+        
+        document.getElementById('btn-signup').addEventListener('click', async () => {
+            const name = document.getElementById('signup-name').value, email = document.getElementById('signup-email').value, pass = document.getElementById('signup-password').value;
+            if(!name || !email || !pass) return alert("সব ফিল্ড পূরণ করুন!");
+            showLoader();
+            try {
+                const cred = await createUserWithEmailAndPassword(auth, email, pass);
+                await updateProfile(cred.user, { displayName: name });
+                hideLoader();
+            } catch(e) { hideLoader(); alert(e.message); }
+        });
+
+        document.getElementById('btn-login').addEventListener('click', async () => {
+            const email = document.getElementById('login-email').value, pass = document.getElementById('login-password').value;
+            if(!email || !pass) return; showLoader();
+            try { await signInWithEmailAndPassword(auth, email, pass); hideLoader(); } 
+            catch(e) { hideLoader(); alert("ভুল ইমেইল বা পাসওয়ার্ড!"); }
+        });
+        document.getElementById('btn-logout').addEventListener('click', () => signOut(auth));
+
+        // Profile Update
+        document.getElementById('btn-update-profile').addEventListener('click', async () => {
+            const newName = document.getElementById('prof-edit-name').value.trim();
+            const newDob = document.getElementById('prof-edit-dob').value;
+            if(!newName) return alert("নাম দিতে হবে!"); showLoader("Saving Profile...");
+            try {
+                await updateDoc(doc(db, "users", currentUserData.uid), { name: newName, dob: newDob });
+                if(auth.currentUser) await updateProfile(auth.currentUser, { displayName: newName });
+                hideLoader(); alert("প্রোফাইল আপডেট সফল হয়েছে!");
+            } catch(e) { hideLoader(); alert("Error updating profile"); }
+        });
+
+        // PIN Verify/Setup Action
+        document.getElementById('btn-save-pin').addEventListener('click', async () => {
+            const pin = window['get_setup-pin-container']();
+            if(pin.length !== 6) return alert("৬ ডিজিটের পিন দিন");
+            showLoader();
+            try {
+                await updateDoc(doc(db, "users", currentUserData.uid), { pin: pin });
+                hideLoader(); document.getElementById('pin-setup-modal').style.display = 'none';
+                alert("পিন সফলভাবে সেট হয়েছে!");
+            } catch(e) { hideLoader(); alert("Error setting PIN"); }
+        });
+
+        document.getElementById('btn-verify-pin').addEventListener('click', () => {
+            const pin = window['get_verify-pin-container']();
+            if(pin.length !== 6) return alert("সম্পূর্ণ পিন দিন");
+            if(pin === currentUserData.pin) {
+                document.getElementById('pin-verify-modal').style.display = 'none';
+                if(pendingAction) pendingAction(); 
+            } else { alert("ভুল পিন! আবার চেষ্টা করুন।"); window['clear_verify-pin-container'](); }
+        });
+
+        function requirePin(actionFunction) {
+            if(!currentUserData.pin) { alert("প্রথমে প্রোফাইল থেকে পিন সেট করুন!"); return; }
+            pendingAction = actionFunction; window['clear_verify-pin-container']();
+            document.getElementById('pin-verify-modal').style.display = 'flex';
+        }
+
+        window.verifyAndShowBalance = function(type) {
+            requirePin(() => {
+                const bal = Number(currentUserData.balance) || 0;
+                const balTxt = "₹ " + bal.toFixed(2);
+                
+                const btnId = type === 'home' ? 'home-btn-bal' : 'bank-btn-bal';
+                const balId = type === 'home' ? 'home-actual-bal' : 'bank-actual-bal';
+                
+                document.getElementById(btnId).style.display = 'none';
+                const balElement = document.getElementById(balId);
+                
+                balElement.innerHTML = '<span class="checking-text">Fetching Balance...</span>';
+                balElement.style.display = 'block';
+                setTimeout(() => { balElement.innerText = balTxt; }, 1500);
+            });
+        }
+
+        // Scan Features
+        window.switchScanTab = function(tab) {
+            if(tab === 'scan') {
+                document.getElementById('scan-container').style.display = 'block'; 
+                document.getElementById('my-qr-box').style.display = 'none';
+                document.getElementById('tab-btn-scan').style.cssText = 'padding: 15px; flex: 1; text-align: center; font-weight: 600; color: var(--accent-color); border-bottom: 2px solid var(--accent-color); cursor: pointer;';
+                document.getElementById('tab-btn-qr').style.cssText = 'padding: 15px; flex: 1; text-align: center; font-weight: 600; color: var(--text-muted); border-bottom: none; cursor: pointer;';
+                document.getElementById('scan-laser-line').style.display = 'block';
+                
+                if(!html5QrcodeScanner) html5QrcodeScanner = new Html5Qrcode("reader");
+                const startCamera = () => {
+                    html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, (text) => {
+                        html5QrcodeScanner.stop(); document.getElementById('scan-laser-line').style.display = 'none';
+                        handleZuuIdInput(text.trim());
+                    }).catch(err => {
+                        alert("ক্যামেরা ওপেন করতে সমস্যা হচ্ছে।");
+                        document.getElementById('scan-laser-line').style.display = 'none';
+                    });
+                };
+
+                if (html5QrcodeScanner.isScanning) { html5QrcodeScanner.stop().then(startCamera).catch(startCamera); } else { startCamera(); }
+            } else {
+                document.getElementById('scan-container').style.display = 'none'; 
+                document.getElementById('my-qr-box').style.display = 'flex';
+                document.getElementById('tab-btn-qr').style.cssText = 'padding: 15px; flex: 1; text-align: center; font-weight: 600; color: var(--accent-color); border-bottom: 2px solid var(--accent-color); cursor: pointer;';
+                document.getElementById('tab-btn-scan').style.cssText = 'padding: 15px; flex: 1; text-align: center; font-weight: 600; color: var(--text-muted); border-bottom: none; cursor: pointer;';
+
+                if(html5QrcodeScanner) { try{ html5QrcodeScanner.stop(); document.getElementById('scan-laser-line').style.display='none'; }catch(e){} }
+            }
+        };
+
+        document.getElementById('qr-upload').addEventListener('change', async (e) => {
+            if(e.target.files.length == 0) return;
+            showLoader("Scanning QR...");
+            try {
+                const html5QrCode = new Html5Qrcode("reader");
+                const text = await html5QrCode.scanFile(e.target.files[0], true);
+                hideLoader(); e.target.value = ''; handleZuuIdInput(text.trim());
+            } catch(err) { hideLoader(); alert("QR Code স্ক্যান করা যায়নি!"); e.target.value = ''; }
+        });
+
+        window.downloadQR = function() {
+            const qrCanvas = document.querySelector('#qrcode-gen canvas');
+            if (qrCanvas) {
+                const link = document.createElement('a');
+                link.download = 'ZuuPay_QR.png'; link.href = qrCanvas.toDataURL(); link.click();
+            }
+        };
+
+        // Payment Processing
+        window.handleZuuIdInput = async function(zuuid) {
+            if(!zuuid || zuuid === currentUserData.zuuId) return alert("সঠিক Zuu ID দিন (নিজের ID দেওয়া যাবে না)।");
+            showLoader();
+            const snap = await getDocs(query(collection(db, "users"), where("zuuId", "==", zuuid)));
+            hideLoader();
+            if(snap.empty) { alert("এই Zuu ID এর কোনো ব্যবহারকারী নেই!"); } 
+            else {
+                paymentReceiverData = snap.docs[0].data();
+                document.getElementById('pay-receiver-name').innerText = paymentReceiverData.name;
+                document.getElementById('pay-receiver-zuuid').innerText = "ID: " + paymentReceiverData.zuuId;
+                document.getElementById('pay-receiver-pic').src = paymentReceiverData.profilePic || DEFAULT_PIC;
+                document.getElementById('pay-amount').value = '';
+                navTo('pay-screen');
+            }
+        };
+
+        document.getElementById('btn-verify-zuuid').addEventListener('click', () => handleZuuIdInput(document.getElementById('send-zuuid').value.trim()));
+
+        document.getElementById('btn-init-pay').addEventListener('click', () => {
+            const rawAmt = parseFloat(document.getElementById('pay-amount').value);
+            if(isNaN(rawAmt) || rawAmt <= 0) return alert("সঠিক অ্যামাউন্ট দিন");
+            const amt = Number(rawAmt);
+            const myBal = Number(currentUserData.balance) || 0;
+            
+            if(amt > myBal) return alert("পর্যাপ্ত ব্যালেন্স নেই!");
+            
+            requirePin(async () => {
+                showLoader("Processing Payment...");
+                const senderRef = doc(db, "users", currentUserData.uid);
+                const receiverRef = doc(db, "users", paymentReceiverData.uid);
+                
+                try {
+                    await runTransaction(db, async (t) => {
+                        const sDoc = await t.get(senderRef), rDoc = await t.get(receiverRef);
+                        const sBal = Number(sDoc.data().balance) || 0;
+                        const rBal = Number(rDoc.data().balance) || 0;
+                        if(sBal < amt) throw "Insufficient";
+                        
+                        t.update(senderRef, { balance: sBal - amt });
+                        t.update(receiverRef, { balance: rBal + amt });
+                        
+                        t.set(doc(collection(db, "transactions")), {
+                            senderUid: currentUserData.uid, senderName: currentUserData.name,
+                            receiverUid: paymentReceiverData.uid, receiverName: paymentReceiverData.name,
+                            amount: amt, timestamp: serverTimestamp(), type: 'transfer'
+                        });
+                    });
+                    
+                    let contacts = currentUserData.contacts || [];
+                    if(!contacts.find(c => c.uid === paymentReceiverData.uid)) {
+                        contacts.push({ uid: paymentReceiverData.uid, name: paymentReceiverData.name, zuuId: paymentReceiverData.zuuId, pic: paymentReceiverData.profilePic });
+                        await updateDoc(doc(db, "users", currentUserData.uid), { contacts: contacts });
+                    }
+                    hideLoader(); 
+                    
+                    const successAudio = new Audio('https://nice-blue-x6fyb1sn.edgeone.dev/');
+                    successAudio.play().catch(e => console.log("Audio play blocked"));
+                    
+                    document.getElementById('success-amount').innerText = '₹' + amt;
+                    document.getElementById('success-name').innerText = 'To: ' + paymentReceiverData.name;
+                    document.getElementById('payment-success-modal').style.display = 'flex';
+                    
+                    setTimeout(() => { document.getElementById('payment-success-modal').style.display = 'none'; navTo('main-app'); }, 3000);
+                } catch(e) { hideLoader(); alert("ব্যর্থ: " + e); }
+            });
+        });
+
+        // Search 
+        document.getElementById('btn-search').addEventListener('click', async () => {
+            const term = document.getElementById('search-input').value.trim();
+            if(!term) return; showLoader();
+            const listDiv = document.getElementById('search-results-list'); listDiv.innerHTML = '';
+            let results = [];
+            const [s1, s2] = await Promise.all([getDocs(query(collection(db, "users"), where("zuuId", "==", term))), getDocs(query(collection(db, "users"), where("email", "==", term)))]);
+            s1.forEach(d => results.push(d.data()));
+            s2.forEach(d => { if(!results.find(r=>r.uid===d.data().uid)) results.push(d.data()); });
+            
+            hideLoader();
+            if(results.length === 0) return listDiv.innerHTML = '<p style="text-align:center; padding: 20px; color:var(--text-muted);">কাউকে পাওয়া যায়নি</p>';
+            
+            results.forEach(u => {
+                if(u.uid === currentUserData.uid) return;
+                listDiv.innerHTML += `
+                    <li class="chat-item" onclick="handleZuuIdInput('${u.zuuId}')">
+                        <img src="${u.profilePic || DEFAULT_PIC}" class="chat-avatar" style="border-color: #ffd700;">
+                        <div class="chat-info">
+                            <div style="font-weight:600; font-size:1rem; color:var(--text-main);">${u.name}</div>
+                            <div style="font-size:0.8rem; color:var(--text-muted);">ID: ${u.zuuId}</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color:var(--text-muted); margin-left:auto;"></i>
+                    </li>`;
+            });
+        });
+
+        function loadRecentActivity(uid) {
+            onSnapshot(collection(db, "transactions"), (snap) => {
+                let acts = [];
+                snap.forEach(d => {
+                    let data = d.data();
+                    if(data.senderUid === uid || data.receiverUid === uid) acts.push(data);
+                });
+                acts.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                
+                const listDiv = document.getElementById('recent-activity-list');
+                if(acts.length === 0) return listDiv.innerHTML = '<p style="text-align:center; color:var(--text-muted); margin:10px 0;">কোনো লেনদেন নেই</p>';
+                listDiv.innerHTML = '';
+                acts.slice(0,5).forEach(tx => {
+                    const isSender = tx.senderUid === uid;
+                    listDiv.innerHTML += `
+                        <div style="display:flex; justify-content:space-between; padding: 12px 0; border-bottom:1px solid var(--border-color);">
+                            <div>
+                                <div style="font-weight:600; font-size:0.95rem; color:var(--text-main);">${isSender ? `To: ${tx.receiverName}` : `From: ${tx.senderName}`}</div>
+                                <div style="font-size:0.7rem; color:var(--text-muted);">${tx.timestamp ? new Date(tx.timestamp.seconds*1000).toLocaleDateString() : ''}</div>
+                            </div>
+                            <span style="color:${isSender ? 'var(--danger)' : 'var(--success)'}; font-weight:700; font-size:1.1rem;">
+                                ${isSender ? '-' : '+'}₹${tx.amount}
+                            </span>
+                        </div>`;
+                });
+            });
+        }
+    </script>
+    
+    <!-- PREMIUM OVERRIDE SCRIPT & NAVIGATION HISTORY -->
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const customStyles = document.createElement('style');
+            customStyles.innerHTML = `
+                #custom-toast-container { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+                .custom-toast { background: rgba(20, 20, 20, 0.95); color: #fff; padding: 12px 24px; border-radius: 30px; box-shadow: 0 8px 20px rgba(0,0,0,0.5); font-size: 0.9rem; font-weight: 500; border: 1px solid var(--accent-color); opacity: 0; transform: translateY(-20px); transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); backdrop-filter: blur(10px); display: flex; align-items: center; gap: 10px; }
+                .custom-toast.show { opacity: 1; transform: translateY(0); }
+                #page-transition { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(8px); z-index: 4000; display: none; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
+                #page-transition.active { display: flex; opacity: 1; }
+                .buffering-spinner { width: 50px; height: 50px; border: 4px solid rgba(0, 230, 118, 0.2); border-top: 4px solid var(--accent-color); border-radius: 50%; animation: spin 1s linear infinite; }
+            `;
+            document.head.appendChild(customStyles);
+            document.body.insertAdjacentHTML('beforeend', `<div id="custom-toast-container"></div><div id="page-transition"><div class="buffering-spinner"></div></div>`);
+
+            window.alert = function(msg) {
+                const toastContainer = document.getElementById('custom-toast-container');
+                const toast = document.createElement('div');
+                toast.className = 'custom-toast';
+                let finalMsg = msg;
+                if(msg.includes('auth/email-already-in-use')) finalMsg = 'এই ইমেইলটি আগে থেকেই ব্যবহৃত হচ্ছে।';
+                if(msg.includes('auth/invalid-login-credentials')) finalMsg = 'ভুল ইমেইল বা পাসওয়ার্ড!';
+                const isError = finalMsg.includes('ভুল') || finalMsg.includes('নেই') || finalMsg.includes('ব্যর্থ') || finalMsg.includes('ফেইল');
+                const iconColor = isError ? 'var(--danger)' : 'var(--accent-color)';
+                const iconClass = isError ? 'fa-exclamation-circle' : 'fa-check-circle';
+
+                toast.innerHTML = `<i class="fas ${iconClass}" style="color: ${iconColor}; font-size: 1.2rem;"></i> <span>${finalMsg}</span>`;
+                toastContainer.appendChild(toast);
+                
+                setTimeout(() => toast.classList.add('show'), 10);
+                setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 3500);
+            };
+
+            // UPDATE 3: PushState Navigation for Hardware Back Button
+            let currentScreenState = 'splash-screen';
+            
+            window.navTo = function(screenId, pushToHistory = true) {
+                if(pushToHistory) {
+                    history.pushState({ screen: screenId }, '', '#' + screenId);
+                }
+                currentScreenState = screenId;
+                
+                const transition = document.getElementById('page-transition');
+                transition.classList.add('active'); 
+                setTimeout(() => {
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+                    document.getElementById(screenId).classList.add('active-screen');
+                    
+                    const noNavScreens = ['auth-screen', 'splash-screen', 'add-money-screen', 'withdraw-screen', 'pay-screen'];
+                    const navBar = document.getElementById('main-bottom-nav');
+                    
+                    if (noNavScreens.includes(screenId)) {
+                        navBar.classList.remove('show');
+                        setTimeout(() => { if(!navBar.classList.contains('show')) navBar.style.display = 'none'; }, 400);
+                    } else {
+                        navBar.style.display = 'flex';
+                        setTimeout(() => navBar.classList.add('show'), 50);
+                    }
+                    
+                    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                    const navMap = {'main-app':0, 'search-screen':1, 'scan-screen':2, 'chat-screen':3, 'profile-screen':4};
+                    if(navMap[screenId] !== undefined) document.querySelectorAll('.nav-item')[navMap[screenId]].classList.add('active');
+                    
+                    if(screenId !== 'scan-screen' && window.html5QrcodeScanner) { try { window.html5QrcodeScanner.stop(); document.getElementById('scan-laser-line').style.display='none'; } catch(e){} }
+                    
+                    document.getElementById('home-btn-bal').style.display = 'inline-block';
+                    document.getElementById('home-actual-bal').style.display = 'none';
+                    document.getElementById('bank-btn-bal').style.display = 'inline-block';
+                    document.getElementById('bank-actual-bal').style.display = 'none';
+                    
+                    setTimeout(() => { transition.classList.remove('active'); }, 400);
+                }, 300);
+            };
+
+            window.addEventListener('popstate', (e) => {
+                const modals = document.querySelectorAll('.pin-modal');
+                let isModalOpen = false;
+                
+                modals.forEach(m => {
+                    if(m.style.display === 'flex') {
+                        m.style.display = 'none';
+                        isModalOpen = true;
+                    }
+                });
+
+                if(isModalOpen) {
+                    history.pushState({ screen: currentScreenState }, '', '#' + currentScreenState);
+                    return; 
+                }
+
+                if (e.state && e.state.screen) {
+                    window.navTo(e.state.screen, false);
+                } else if(currentScreenState !== 'main-app' && currentScreenState !== 'auth-screen') {
+                    window.navTo('main-app', false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
