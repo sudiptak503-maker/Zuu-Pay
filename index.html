@@ -1145,200 +1145,117 @@
                 window.close(); 
             }
         }
-    </script>
-<!-- ============================================================ -->
-<!-- ZUU PAY - PAYMENT HANDLER (Star Finance Integration) -->
-<!-- ============================================================ -->
-<script>
-(function() {
-    // URL থেকে ডাটা নেওয়া
-    const urlParams = new URLSearchParams(window.location.search);
-    const action = urlParams.get('action');
-    const encodedData = urlParams.get('data');
-    const returnUrl = urlParams.get('returnUrl') || 'https://star-loans-a1038.web.app/';
-    
-    console.log('🔍 Zuu Pay Loaded - Action:', action);
-    console.log('📦 Data:', encodedData ? 'Received' : 'No data');
-    
-    if (action === 'payment' && encodedData) {
-        try {
-            const paymentData = JSON.parse(decodeURIComponent(encodedData));
-            console.log('💰 Payment Data:', paymentData);
-            
-            // পেমেন্ট UI দেখানো
-            showPaymentUI(paymentData);
-            
-        } catch (e) {
-            console.error('❌ Error:', e);
-            document.body.innerHTML = `
-                <div style="text-align:center;padding:50px;color:red;font-family:sans-serif;">
-                    <h3>Error loading payment</h3>
-                    <p>${e.message}</p>
-                    <button onclick="window.close()" style="padding:10px 20px;margin-top:20px;border:none;border-radius:5px;background:#333;color:#fff;cursor:pointer;">Close</button>
-                </div>
-            `;
-        }
-    }
-    
-    function showPaymentUI(data) {
-        // লগইন চেক
-        const userData = JSON.parse(localStorage.getItem('zuuUserData') || 'null');
-        const isLoggedIn = userData && userData.uid;
-        
-        let loginSection = '';
-        if (!isLoggedIn) {
-            loginSection = `
-                <div style="background:#1a1a2e;padding:15px;border-radius:10px;margin-bottom:15px;border:1px solid #FFD700;">
-                    <p style="color:#FFD700;font-weight:bold;">🔑 Zuu Pay এ লগইন করুন</p>
-                    <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
-                        <input type="text" id="zuuLoginUser" placeholder="Username" style="flex:1;padding:10px;border-radius:5px;border:1px solid #444;background:#0a0a0f;color:#fff;">
-                        <input type="password" id="zuuLoginPass" placeholder="Password" style="flex:1;padding:10px;border-radius:5px;border:1px solid #444;background:#0a0a0f;color:#fff;">
-                        <button onclick="handleZuuLogin()" style="padding:10px 20px;background:#FFD700;color:#000;border:none;border-radius:5px;font-weight:bold;cursor:pointer;">লগইন</button>
-                    </div>
-                    <p style="color:#888;font-size:12px;margin-top:8px;">নতুন? <span onclick="showRegister()" style="color:#FFD700;cursor:pointer;">একাউন্ট তৈরি করুন</span></p>
-                </div>
-            `;
-        }
-        
-        // লগইন ফাংশন
-        window.handleZuuLogin = function() {
-            const username = document.getElementById('zuuLoginUser').value.trim();
-            const password = document.getElementById('zuuLoginPass').value.trim();
-            
-            if (!username || !password) {
-                alert('দয়া করে ইউজারনেম ও পাসওয়ার্ড দিন');
-                return;
-            }
-            
-            // Firebase Auth দিয়ে লগইন
-            const email = username + '@zuupay.com';
-            firebase.auth().signInWithEmailAndPassword(email, password)
-                .then((userCredential) => {
-                    const user = userCredential.user;
-                    // ইউজার ডাটা সেভ
-                    const userData = {
-                        uid: user.uid,
-                        username: username,
-                        email: user.email,
-                        wallet: 0
-                    };
-                    localStorage.setItem('zuuUserData', JSON.stringify(userData));
-                    
-                    // Star Finance-এ লিংক আপডেট
-                    if (data.starUid) {
-                        fetch(`https://star-loans-a1038.web.app/api/link-zuu`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                starUid: data.starUid,
-                                zuuUid: user.uid
-                            })
-                        }).catch(e => console.error('Link error:', e));
-                    }
-                    
-                    alert('✅ লগইন সফল!');
-                    location.reload(); // পেজ রিলোড
-                })
-                .catch((error) => {
-                    alert('❌ লগইন ব্যর্থ: ' + error.message);
-                });
-        };
-        
-        window.showRegister = function() {
-            alert('Zuu Pay অ্যাপে রেজিস্টার করুন');
-        };
-        
-        // পেমেন্ট UI
-        document.body.innerHTML = `
-            <div style="max-width:420px;margin:30px auto;padding:25px;background:#151520;border-radius:20px;border:2px solid #FFD700;text-align:center;font-family:sans-serif;box-shadow:0 10px 30px rgba(255,215,0,0.2);">
-                <div style="margin-bottom:15px;">
-                    <i class="fas fa-shield-alt" style="font-size:40px;color:#FFD700;"></i>
-                    <h2 style="color:#FFD700;margin:5px 0;">Zuu Pay</h2>
-                    <p style="color:#888;font-size:12px;">Secure Payment Gateway</p>
-                </div>
-                
-                ${loginSection}
-                
-                <div style="background:#0a0a0f;padding:20px;border-radius:15px;margin:15px 0;border:1px solid #333;">
-                    <p style="color:#aaa;font-size:13px;">${data.starFullname || data.starUsername || 'User'}</p>
-                    <p style="color:#888;font-size:11px;">${data.purpose || 'Payment'}</p>
-                    <h1 style="color:#FFD700;font-size:42px;margin:10px 0;">₹${data.amount}</h1>
-                    ${data.discount > 0 ? `<p style="color:#43e97b;font-size:13px;">✅ ছাড়: ₹${data.discount} (২%)</p>` : ''}
-                    <p style="color:#666;font-size:11px;margin-top:5px;">Star Finance ID: ${data.starUid || 'N/A'}</p>
-                </div>
-                
-                <div style="display:flex;gap:15px;flex-wrap:wrap;justify-content:center;">
-                    <button onclick="confirmPayment()" style="background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;padding:14px 35px;border:none;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer;flex:1;min-width:120px;box-shadow:0 4px 15px rgba(255,215,0,0.3);">
-                        ✅ কনফার্ম করুন
-                    </button>
-                    <button onclick="window.close()" style="background:#333;color:#fff;padding:14px 25px;border:none;border-radius:12px;font-size:14px;cursor:pointer;flex:1;min-width:100px;">
-                        ❌ বাতিল
-                    </button>
-                </div>
-                
-                <p style="color:#666;font-size:11px;margin-top:15px;">পেমেন্ট নিশ্চিত করতে উপরের বাটনে ক্লিক করুন</p>
-            </div>
-        `;
-        
-        // কনফার্ম ফাংশন
-        window.confirmPayment = function() {
-            // লগইন চেক
-            const userData = JSON.parse(localStorage.getItem('zuuUserData') || 'null');
-            
-            if (!userData) {
-                alert('❌ দয়া করে প্রথমে লগইন করুন!');
-                return;
-            }
-            
-            // ব্যালেন্স চেক
-            const wallet = parseFloat(userData.wallet || 0);
-            if (wallet < data.amount) {
-                alert(`❌ Zuu Pay-এ পর্যাপ্ত ব্যালেন্স নেই!\n\nবর্তমান ব্যালেন্স: ₹${wallet}\nপ্রয়োজন: ₹${data.amount}`);
-                return;
-            }
-            
-            // কনফার্মেশন
-            if (!confirm(`নিশ্চিত করুন: ₹${data.amount} পেমেন্ট করবেন?`)) {
-                return;
-            }
-            
-            // ব্যালেন্স কাটা
-            const newBalance = wallet - data.amount;
-            userData.wallet = newBalance;
-            localStorage.setItem('zuuUserData', JSON.stringify(userData));
-            
-            // রেজাল্ট সেভ
-            localStorage.setItem('zuuPayPaymentResult', JSON.stringify({
-                success: true,
-                amount: data.amount,
-                type: data.type,
-                discount: data.discount || 0,
-                timestamp: Date.now()
-            }));
-            
-            // ✅ সফল মেসেজ
-            document.body.innerHTML = `
-                <div style="max-width:400px;margin:50px auto;padding:40px;background:#151520;border-radius:20px;border:2px solid #43e97b;text-align:center;">
-                    <div style="width:80px;height:80px;background:#43e97b;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
-                        <i class="fas fa-check" style="font-size:40px;color:#000;"></i>
-                    </div>
-                    <h2 style="color:#43e97b;">✅ পেমেন্ট সফল!</h2>
-                    <p style="color:#ddd;font-size:18px;">₹${data.amount}</p>
-                    <p style="color:#888;">${data.purpose || 'Payment'}</p>
-                    <p style="color:#666;font-size:12px;margin-top:10px;">Star Finance-এ রিডাইরেক্ট হচ্ছে...</p>
-                </div>
-            `;
-            
-            // 2 সেকেন্ড পর Star Finance-এ রিডাইরেক্ট
-            setTimeout(() => {
-                window.location.href = returnUrl;
-            }, 2000);
-        };
-    }
-})();
 </script>
-<!-- ============================================================ -->
-<!-- ========== END ZUU PAY HANDLER ============================== -->
-<!-- ============================================================ -->
+  <!-- ================= [ ZUU PAY - PAYMENT HANDLER OVERRIDE ] ================= -->
+<script type="module">
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js";
+
+const auth = getAuth();
+const db = getFirestore();
+const urlParams = new URLSearchParams(window.location.search);
+
+if (urlParams.get('action') === 'payment' && urlParams.get('data')) {
+    const paymentData = JSON.parse(decodeURIComponent(urlParams.get('data')));
+    const returnUrl = decodeURIComponent(urlParams.get('returnUrl'));
+    
+    // ফুল স্ক্রিন UI তৈরি
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; inset:0; background:var(--bg-color); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center;';
+    document.body.appendChild(overlay);
+
+    const renderUI = (userDoc) => {
+        if (!userDoc) {
+            // ইউজার লগইন না থাকলে (সাময়িক লিঙ্কিং)
+            overlay.innerHTML = `
+                <h2 style="color:var(--accent-color); margin-bottom:20px; font-size:35px;"><i class="fas fa-bolt"></i> Zuu Pay</h2>
+                <p style="color:var(--text-muted); font-size:14px; margin-bottom:30px;">Star Finance-এর পেমেন্ট সম্পন্ন করতে আপনার Zuu Pay আইডিতে একবার লগইন করুন।</p>
+                
+                <input type="email" id="zpEmail" placeholder="Zuu Pay Email" style="width:100%; max-width:320px; padding:15px; border-radius:12px; margin-bottom:15px; background:var(--primary-dark); color:#fff; border:1px solid var(--border-color); font-size:15px; outline:none;">
+                <input type="password" id="zpPass" placeholder="Password" style="width:100%; max-width:320px; padding:15px; border-radius:12px; margin-bottom:25px; background:var(--primary-dark); color:#fff; border:1px solid var(--border-color); font-size:15px; outline:none;">
+                
+                <button id="zpLoginBtn" style="background:var(--accent-color); color:#000; padding:15px; border-radius:12px; font-weight:bold; font-size:16px; cursor:pointer; border:none; width:100%; max-width:320px; margin-bottom:15px;">লগইন করুন</button>
+                <button onclick="window.location.href='${returnUrl}'" style="background:transparent; color:var(--danger); border:none; font-size:15px; cursor:pointer;">Cancel & Return</button>
+            `;
+            
+            document.getElementById('zpLoginBtn').onclick = async () => {
+                const e = document.getElementById('zpEmail').value;
+                const p = document.getElementById('zpPass').value;
+                if(!e || !p) return alert('Email & Password required');
+                document.getElementById('zpLoginBtn').innerText = 'Please wait...';
+                try {
+                    await signInWithEmailAndPassword(auth, e, p);
+                } catch(err) {
+                    alert('Login Failed: ' + err.message);
+                    document.getElementById('zpLoginBtn').innerText = 'লগইন করুন';
+                }
+            };
+        } else {
+            // ইউজার লগইন থাকলে (পেমেন্ট পেজ)
+            const bal = userDoc.balance || 0;
+            overlay.innerHTML = `
+                <div style="background:var(--primary-dark); padding:35px 25px; border-radius:25px; border:2px solid #FFD700; width:100%; max-width:380px; box-shadow:0 15px 35px rgba(255,215,0,0.2);">
+                    <div style="width: 70px; height: 70px; background: rgba(255,215,0,0.1); border-radius: 50%; display: flex; justify-content: center; align-items: center; margin: 0 auto 15px; color:#FFD700; font-size:30px;">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <h2 style="color:#FFD700; margin-bottom:5px;">Premium Payment</h2>
+                    <p style="color:var(--text-muted); font-size:13px; margin-bottom:25px;">To: ${paymentData.starFullname} (Star Finance)</p>
+                    
+                    <div style="background:#000; padding:20px; border-radius:15px; margin-bottom:25px; border:1px solid #333; text-align:left;">
+                        <div style="display:flex; justify-content:space-between; color:#aaa; margin-bottom:10px; font-size:14px;"><span>অরিজিনাল অ্যামাউন্ট:</span> <span>₹${paymentData.originalAmount}</span></div>
+                        <div style="display:flex; justify-content:space-between; color:var(--success); margin-bottom:10px; font-size:14px;"><span>ইনস্ট্যান্ট ছাড় (2%):</span> <span>- ₹${paymentData.discount}</span></div>
+                        <hr style="border:0; border-top:1px dashed #444; margin:12px 0;">
+                        <div style="display:flex; justify-content:space-between; font-size:22px; font-weight:900; color:#fff;"><span>মোট পে করবেন:</span> <span style="color:#FFD700;">₹${paymentData.amount}</span></div>
+                    </div>
+                    
+                    <p style="color:var(--text-muted); font-size:13px; margin-bottom:20px;">আপনার বর্তমান Zuu ব্যালেন্স: <strong>₹${bal.toFixed(2)}</strong></p>
+                    
+                    <button id="zpPayBtn" style="background:linear-gradient(135deg, #FFD700, #FFA500); color:#000; padding:18px; border-radius:15px; width:100%; font-weight:900; font-size:16px; border:none; cursor:pointer; margin-bottom:15px; box-shadow: 0 8px 20px rgba(255,215,0,0.3);">
+                        Pay ₹${paymentData.amount} Instantly
+                    </button>
+                    <button onclick="window.location.href='${returnUrl}'" style="background:var(--card-bg); color:#fff; padding:15px; border-radius:15px; width:100%; border:1px solid #333; cursor:pointer; font-weight:bold;">Cancel & Go Back</button>
+                </div>
+            `;
+
+            document.getElementById('zpPayBtn').onclick = async () => {
+                if(bal < paymentData.amount) return alert('Insufficient Zuu Pay Balance! দয়া করে আগে ব্যালেন্স যুক্ত করুন।');
+                document.getElementById('zpPayBtn').innerText = 'Processing Payment...';
+                try {
+                    const newBal = bal - paymentData.amount;
+                    await updateDoc(doc(db, "users", auth.currentUser.uid), { balance: newBal });
+                    
+                    overlay.innerHTML = `
+                        <div style="background:var(--primary-dark); padding:40px; border-radius:25px; text-align:center; border:2px solid var(--success);">
+                            <i class="fas fa-check-circle" style="color:var(--success); font-size:60px; margin-bottom:20px;"></i>
+                            <h2 style="color:var(--success); margin-bottom:10px;">Payment Done!</h2>
+                            <p style="color:var(--text-muted); font-size:14px;">Star Finance-এ ফিরে যাওয়া হচ্ছে...</p>
+                        </div>
+                    `;
+                    
+                    setTimeout(() => {
+                        const separator = returnUrl.includes('?') ? '&' : '?';
+                        window.location.href = `${returnUrl}${separator}zuu_success=true&paid=${paymentData.amount}&credited=${paymentData.originalAmount}&type=${paymentData.type}`;
+                    }, 2000);
+                } catch(err) {
+                    alert('Payment Error: ' + err.message);
+                    document.getElementById('zpPayBtn').innerText = `Pay ₹${paymentData.amount} Instantly`;
+                }
+            };
+        }
+    };
+
+    // ফায়ারবেস অথেনটিকেশন চেক 
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            const snap = await getDoc(doc(db, "users", user.uid));
+            renderUI(snap.exists() ? snap.data() : null);
+        } else {
+            renderUI(null);
+        }
+    });
+}
+</script>
+<!-- ================= [ END ZUU PAY OVERRIDE ] ================= -->
+
 </body>
 </html>
